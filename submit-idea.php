@@ -1,117 +1,76 @@
 <?php
-require_once 'php/config.php';
+require_once 'config.php';
 requireLogin();
 
-$categories = $db->fetchAll("SELECT * FROM categories ORDER BY name");
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Submit Idea - IdeaBox</title>
-    <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
-    <nav class="navbar">
-        <div class="nav-container">
-            <a href="dashboard.php" class="nav-logo">IdeaBox</a>
-            <ul class="nav-menu">
-                <li><a href="dashboard.php" class="nav-link">Dashboard</a></li>
-                <li><a href="ideas.php" class="nav-link">Browse Ideas</a></li>
-                <li><a href="submit-idea.php" class="nav-link active">Submit Idea</a></li>
-                <li><a href="profile.php" class="nav-link">Profile</a></li>
-                <li><a href="logout.php" class="nav-link">Logout</a></li>
-            </ul>
-        </div>
-    </nav>
+$response = ['success' => false, 'message' => ''];
 
-    <div class="container">
-        <div class="submit-idea-section">
-            <h1>Submit Your Idea</h1>
-            <p>Share your innovative idea with the community and get feedback!</p>
-            
-            <?php
-            if (isset($_SESSION['success_message'])) {
-                echo '<div class="success">' . $_SESSION['success_message'] . '</div>';
-                unset($_SESSION['success_message']);
-            }
-            if (isset($_SESSION['error_message'])) {
-                echo '<div class="error">' . $_SESSION['error_message'] . '</div>';
-                unset($_SESSION['error_message']);
-            }
-            ?>
-            
-            <form id="ideaForm" action="php/submit-idea.php" method="POST" enctype="multipart/form-data">
-                <div class="form-group">
-                    <label for="title">Idea Title:</label>
-                    <input type="text" id="title" name="title" maxlength="200" required>
-                    <span class="error-text" id="title-error"></span>
-                    <small>Maximum 200 characters</small>
-                </div>
-                
-                <div class="form-group">
-                    <label for="description">Description:</label>
-                    <textarea id="description" name="description" rows="6" required></textarea>
-                    <span class="error-text" id="description-error"></span>
-                    <small>Provide a detailed description of your idea</small>
-                </div>
-                
-                <div class="form-group">
-                    <label for="category">Category:</label>
-                    <select id="category" name="category_id" required>
-                        <option value="">Select a category</option>
-                        <?php foreach ($categories as $category): ?>
-                            <option value="<?php echo $category['id']; ?>">
-                                <?php echo sanitize($category['name']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                    <span class="error-text" id="category-error"></span>
-                </div>
-                
-                <div class="form-group">
-                    <label for="file">Attachment (Optional):</label>
-                    <input type="file" id="file" name="file" accept=".jpg,.jpeg,.png,.gif,.pdf,.doc,.docx">
-                    <span class="error-text" id="file-error"></span>
-                    <small>Allowed formats: JPG, PNG, GIF, PDF, DOC, DOCX (Max 5MB)</small>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">Submit Idea</button>
-                    <a href="dashboard.php" class="btn btn-secondary">Cancel</a>
-                </div>
-            </form>
-        </div>
-    </div>
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $title = sanitize($_POST['title']);
+    $description = sanitize($_POST['description']);
+    $categoryId = (int)$_POST['category_id'];
+    $userId = $_SESSION['user_id'];
+    $fileName = null;
     
-    <script src="js/validation.js"></script>
-    <script>
-        document.getElementById('ideaForm').addEventListener('submit', function(e) {
-            if (!validateIdeaForm()) {
-                e.preventDefault();
+    // Validation
+    if (empty($title) || empty($description) || empty($categoryId)) {
+        $response['message'] = 'Title, description, and category are required';
+    } elseif (strlen($title) > 200) {
+        $response['message'] = 'Title must be 200 characters or less';
+    } elseif (strlen($description) < 10) {
+        $response['message'] = 'Description must be at least 10 characters long';
+    } else {
+        try {
+            // Handle file upload if provided
+            if (isset($_FILES['file']) && $_FILES['file']['error'] !== UPLOAD_ERR_NO_FILE) {
+                try {
+                    $fileName = uploadFile($_FILES['file']);
+                } catch (Exception $e) {
+                    $response['message'] = 'File upload error: ' . $e->getMessage();
+                }
             }
-        });
-        
-        // Character counter for title
-        document.getElementById('title').addEventListener('input', function() {
-            const maxLength = 200;
-            const currentLength = this.value.length;
-            const remaining = maxLength - currentLength;
             
-            if (remaining < 0) {
-                this.value = this.value.substring(0, maxLength);
+            if ($response['message'] === '') {
+                // Insert idea into database
+                $stmt = $db->query(
+                    "INSERT INTO ideas (user_id, title, description, category_id, file_path) VALUES (?, ?, ?, ?, ?)",
+                    [$userId, $title, $description, $categoryId, $fileName]
+                );
+                
+                if ($stmt) {
+                    $response['success'] = true;
+                    $response['message'] = 'Idea submitted successfully!';
+                } else {
+                    $response['message'] = 'Failed to submit idea. Please try again.';
+                    // Delete uploaded file if database insert failed
+                    if ($fileName) {
+                        deleteFile($fileName);
+                    }
+                }
             }
-        });
-        
-        // File size validation
-        document.getElementById('file').addEventListener('change', function() {
-            const file = this.files[0];
-            if (file && file.size > 5 * 1024 * 1024) { // 5MB
-                alert('File size must be less than 5MB');
-                this.value = '';
+        } catch (Exception $e) {
+            $response['message'] = 'Database error: ' . $e->getMessage();
+            // Delete uploaded file if there was an error
+            if ($fileName) {
+                deleteFile($fileName);
             }
-        });
-    </script>
-</body>
-</html>
+        }
+    }
+} else {
+    $response['message'] = 'Invalid request method';
+}
+
+// If it's an AJAX request, return JSON
+if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+    jsonResponse($response);
+}
+
+// If it's a regular form submission, redirect with message
+if ($response['success']) {
+    $_SESSION['success_message'] = $response['message'];
+    header('Location: ../ideas.php');
+} else {
+    $_SESSION['error_message'] = $response['message'];
+    header('Location: ../submit-idea.php');
+}
+exit();
+?>

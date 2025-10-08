@@ -1,76 +1,72 @@
 <?php
-require_once 'php/config.php';
-if (isLoggedIn()) {
-    header('Location: dashboard.php');
-    exit();
-}
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - IdeaBox</title>
-    <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
-    <div class="container">
-        <div class="auth-form">
-            <h2>Register for IdeaBox</h2>
-            <div id="error-message" class="error hidden"></div>
-            <div id="success-message" class="success hidden"></div>
-            <?php
-            if (isset($_SESSION['error_message'])) {
-                echo '<div class="error">' . $_SESSION['error_message'] . '</div>';
-                unset($_SESSION['error_message']);
-            }
-            if (isset($_SESSION['success_message'])) {
-                echo '<div class="success">' . $_SESSION['success_message'] . '</div>';
-                unset($_SESSION['success_message']);
-            }
-            ?>
-            
-            <form id="registerForm" action="/IdeaBox/php/register.php" method="POST">
-                <div class="form-group">
-                    <label for="name">Full Name:</label>
-                    <input type="text" id="name" name="name" required>
-                    <span class="error-text" id="name-error"></span>
-                </div>
-                
-                <div class="form-group">
-                    <label for="email">Email Address:</label>
-                    <input type="email" id="email" name="email" required>
-                    <span class="error-text" id="email-error"></span>
-                </div>
-                
-                <div class="form-group">
-                    <label for="password">Password:</label>
-                    <input type="password" id="password" name="password" required>
-                    <span class="error-text" id="password-error"></span>
-                </div>
-                
-                <div class="form-group">
-                    <label for="confirm_password">Confirm Password:</label>
-                    <input type="password" id="confirm_password" name="confirm_password" required>
-                    <span class="error-text" id="confirm-password-error"></span>
-                </div>
-                
-                <button type="submit" class="btn btn-primary">Register</button>
-            </form>
-            
-            <p class="auth-link">
-                Already have an account? <a href="login.php">Login here</a>
-            </p>
-        </div>
-    </div>
+require_once 'config.php';
+
+$response = ['success' => false, 'message' => ''];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $name = sanitize($_POST['name']);
+    $email = sanitize($_POST['email']);
+    $password = $_POST['password'];
+    $confirm_password = $_POST['confirm_password'];
     
-    <script src="js/validation.js"></script>
-    <script>
-        document.getElementById('registerForm').addEventListener('submit', function(e) {
-            if (!validateRegistrationForm()) {
-                e.preventDefault();
+    // Validation
+    if (empty($name) || empty($email) || empty($password) || empty($confirm_password)) {
+        $response['message'] = 'All fields are required';
+    } elseif (!validateEmail($email)) {
+        $response['message'] = 'Invalid email format';
+    } elseif (strlen($password) < 6) {
+        $response['message'] = 'Password must be at least 6 characters long';
+    } elseif ($password !== $confirm_password) {
+        $response['message'] = 'Passwords do not match';
+    } else {
+        try {
+            // Check if email already exists
+            $existingUser = $db->fetchOne("SELECT id FROM users WHERE email = ?", [$email]);
+            
+            if ($existingUser) {
+                $response['message'] = 'Email already registered';
+            } else {
+                // Hash password and create user
+                $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+                
+                $stmt = $db->query(
+                    "INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
+                    [$name, $email, $hashedPassword]
+                );
+                
+                if ($stmt) {
+                    $response['success'] = true;
+                    $response['message'] = 'Registration successful! You can now login.';
+                    
+                    // Auto-login the user
+                    $userId = $db->lastInsertId();
+                    $_SESSION['user_id'] = $userId;
+                    $_SESSION['user_name'] = $name;
+                    $_SESSION['user_email'] = $email;
+                } else {
+                    $response['message'] = 'Registration failed. Please try again.';
+                }
             }
-        });
-    </script>
-</body>
-</html>
+        } catch (Exception $e) {
+            $response['message'] = 'Database error: ' . $e->getMessage();
+        }
+    }
+} else {
+    $response['message'] = 'Invalid request method';
+}
+
+// Only return JSON when explicitly requested via query param
+if (isset($_GET['ajax']) && $_GET['ajax'] === '1') {
+    jsonResponse($response);
+}
+
+// If it's a regular form submission, redirect with message
+if ($response['success']) {
+    $_SESSION['success_message'] = $response['message'];
+    header('Location: /IdeaBox/dashboard.php');
+} else {
+    $_SESSION['error_message'] = $response['message'];
+    header('Location: /IdeaBox/register.php');
+}
+exit();
+?>
