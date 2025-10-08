@@ -316,4 +316,4 @@ For issues or questions:
 
 ---
 
-**Built with ❤️ using only vanilla HTML, CSS, JavaScript, PHP, and MySQL**"# Idea-Box" 
+**Built with ❤️ using only vanilla HTML, CSS, JavaScript, PHP, and MySQL**
