@@ -3,15 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - IdeaBox</title>
-    <link rel="stylesheet" href="css/style.css">
+    <title>Admin Login - IdeaBox</title>
+    <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
     <div class="container">
         <div class="auth-form">
-            <h2>Login to IdeaBox</h2>
-            <div id="error-message" class="error hidden"></div>
-            <div id="success-message" class="success hidden"></div>
+            <h2>Admin Login</h2>
+            <p>Access the IdeaBox administration panel</p>
             
             <?php
             session_start();
@@ -25,37 +24,29 @@
             }
             ?>
             
-            <form id="loginForm" action="/IdeaBox/php/login.php" method="POST">
+            <form id="adminLoginForm" action="../php/admin-login.php" method="POST">
                 <div class="form-group">
-                    <label for="email">Email Address:</label>
-                    <input type="email" id="email" name="email" required>
-                    <span class="error-text" id="email-error"></span>
+                    <label for="username">Admin Username:</label>
+                    <input type="text" id="username" name="username" required>
+                    <span class="error-text" id="username-error"></span>
                 </div>
                 
                 <div class="form-group">
-                    <label for="password">Password:</label>
+                    <label for="password">Admin Password:</label>
                     <input type="password" id="password" name="password" required>
                     <span class="error-text" id="password-error"></span>
                 </div>
                 
-                <button type="submit" class="btn btn-primary">Login</button>
+                <button type="submit" class="btn btn-primary">Login as Admin</button>
             </form>
             
             <div class="auth-links">
-                <p><a href="register.php">Don't have an account? Register here</a></p>
-                <p><a href="forgot-password.php">Forgot your password?</a></p>
-                <p><a href="admin/login.php">Admin Login</a></p>
+                <p><a href="../index.php">← Back to IdeaBox</a></p>
+                <p><em>Default admin credentials: admin / admin123</em></p>
             </div>
         </div>
     </div>
     
-    <script src="js/validation.js"></script>
-    <script>
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            if (!validateLoginForm()) {
-                e.preventDefault();
-            }
-        });
-    </script>
+    <script src="../js/validation.js"></script>
 </body>
 </html>

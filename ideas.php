@@ -1,13 +1,43 @@
 <?php
-require_once 'php/config.php';
-requireLogin();
+require_once '../php/config.php';
+requireAdmin();
 
-// Get search and filter parameters
+// Handle actions
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    $action = $_POST['action'];
+    $ideaId = (int)$_POST['idea_id'];
+    
+    try {
+        if ($action === 'delete' && $ideaId > 0) {
+            // Get file path before deleting
+            $idea = $db->fetchOne("SELECT file_path FROM ideas WHERE id = ?", [$ideaId]);
+            
+            // Delete idea and all related data (cascading delete should handle this)
+            $db->query("DELETE FROM ideas WHERE id = ?", [$ideaId]);
+            
+            // Delete associated file if exists
+            if ($idea && $idea['file_path']) {
+                deleteFile($idea['file_path']);
+            }
+            
+            $_SESSION['success_message'] = 'Idea deleted successfully!';
+        }
+    } catch (Exception $e) {
+        $_SESSION['error_message'] = 'Error: ' . $e->getMessage();
+    }
+    
+    header('Location: ideas.php');
+    exit();
+}
+
+// Get ideas with pagination
+$page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+$perPage = 20;
+$offset = ($page - 1) * $perPage;
+
 $search = isset($_GET['search']) ? sanitize($_GET['search']) : '';
 $categoryFilter = isset($_GET['category']) ? (int)$_GET['category'] : 0;
-$sortBy = isset($_GET['sort']) ? sanitize($_GET['sort']) : 'newest';
 
-// Build SQL query
 $whereConditions = [];
 $params = [];
 
@@ -24,22 +54,21 @@ if ($categoryFilter > 0) {
 
 $whereClause = !empty($whereConditions) ? "WHERE " . implode(" AND ", $whereConditions) : "";
 
-// Set order by clause
-$orderBy = match($sortBy) {
-    'oldest' => 'ORDER BY i.created_at ASC',
-    'popular' => 'ORDER BY i.vote_count DESC, i.created_at DESC',
-    'title' => 'ORDER BY i.title ASC',
-    default => 'ORDER BY i.created_at DESC'
-};
+$totalIdeas = $db->fetchOne("SELECT COUNT(*) as count FROM ideas i $whereClause", $params)['count'];
+$totalPages = ceil($totalIdeas / $perPage);
 
-$sql = "SELECT i.*, u.name as author_name, c.name as category_name 
-        FROM ideas i 
-        JOIN users u ON i.user_id = u.id 
-        JOIN categories c ON i.category_id = c.id 
-        $whereClause 
-        $orderBy";
+$ideas = $db->fetchAll(
+    "SELECT i.*, u.name as author_name, c.name as category_name,
+     (SELECT COUNT(*) FROM comments WHERE idea_id = i.id) as comment_count
+     FROM ideas i 
+     JOIN users u ON i.user_id = u.id 
+     JOIN categories c ON i.category_id = c.id 
+     $whereClause 
+     ORDER BY i.created_at DESC 
+     LIMIT $perPage OFFSET $offset", 
+    $params
+);
 
-$ideas = $db->fetchAll($sql, $params);
 $categories = $db->fetchAll("SELECT * FROM categories ORDER BY name");
 ?>
 <!DOCTYPE html>
@@ -47,140 +76,134 @@ $categories = $db->fetchAll("SELECT * FROM categories ORDER BY name");
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Browse Ideas - IdeaBox</title>
-    <link rel="stylesheet" href="css/style.css">
+    <title>Manage Ideas - IdeaBox Admin</title>
+    <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-    <nav class="navbar">
+    <nav class="navbar admin-nav">
         <div class="nav-container">
-            <a href="dashboard.php" class="nav-logo">IdeaBox</a>
+            <a href="dashboard.php" class="nav-logo">IdeaBox Admin</a>
             <ul class="nav-menu">
                 <li><a href="dashboard.php" class="nav-link">Dashboard</a></li>
-                <li><a href="ideas.php" class="nav-link active">Browse Ideas</a></li>
-                <li><a href="submit-idea.php" class="nav-link">Submit Idea</a></li>
-                <li><a href="profile.php" class="nav-link">Profile</a></li>
-                <li><a href="logout.php" class="nav-link">Logout</a></li>
+                <li><a href="users.php" class="nav-link">Users</a></li>
+                <li><a href="ideas.php" class="nav-link active">Ideas</a></li>
+                <li><a href="../index.php" class="nav-link">View Site</a></li>
+                <li><a href="../logout.php" class="nav-link">Logout</a></li>
             </ul>
         </div>
     </nav>
 
     <div class="container">
-        <div class="ideas-section">
+        <div class="admin-section">
             <div class="section-header">
-                <h1>Browse Ideas</h1>
-                <a href="submit-idea.php" class="btn btn-primary">Submit New Idea</a>
+                <h1>Manage Ideas</h1>
+                <div class="header-stats">
+                    <span>Total Ideas: <?php echo $totalIdeas; ?></span>
+                </div>
             </div>
             
-            <?php
-            if (isset($_SESSION['success_message'])) {
-                echo '<div class="success">' . $_SESSION['success_message'] . '</div>';
-                unset($_SESSION['success_message']);
-            }
-            ?>
+            <?php if (isset($_SESSION['success_message'])): ?>
+                <div class="success"><?php echo $_SESSION['success_message']; unset($_SESSION['success_message']); ?></div>
+            <?php endif; ?>
+            
+            <?php if (isset($_SESSION['error_message'])): ?>
+                <div class="error"><?php echo $_SESSION['error_message']; unset($_SESSION['error_message']); ?></div>
+            <?php endif; ?>
             
             <!-- Search and Filter Form -->
-            <div class="search-filter-section">
-                <form method="GET" action="ideas.php" class="search-form">
-                    <div class="search-row">
-                        <div class="search-group">
-                            <input type="text" name="search" placeholder="Search ideas..." value="<?php echo htmlspecialchars($search); ?>">
-                        </div>
-                        
-                        <div class="filter-group">
-                            <select name="category">
-                                <option value="0">All Categories</option>
-                                <?php foreach ($categories as $category): ?>
-                                    <option value="<?php echo $category['id']; ?>" 
-                                            <?php echo $categoryFilter == $category['id'] ? 'selected' : ''; ?>>
-                                        <?php echo sanitize($category['name']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        
-                        <div class="sort-group">
-                            <select name="sort">
-                                <option value="newest" <?php echo $sortBy == 'newest' ? 'selected' : ''; ?>>Newest First</option>
-                                <option value="oldest" <?php echo $sortBy == 'oldest' ? 'selected' : ''; ?>>Oldest First</option>
-                                <option value="popular" <?php echo $sortBy == 'popular' ? 'selected' : ''; ?>>Most Popular</option>
-                                <option value="title" <?php echo $sortBy == 'title' ? 'selected' : ''; ?>>Title A-Z</option>
-                            </select>
-                        </div>
-                        
-                        <button type="submit" class="btn btn-secondary">Filter</button>
-                        <?php if ($search || $categoryFilter || $sortBy != 'newest'): ?>
-                            <a href="ideas.php" class="btn btn-outline">Clear</a>
-                        <?php endif; ?>
-                    </div>
+            <div class="search-section">
+                <form method="GET" action="ideas.php" class="search-form admin-search">
+                    <input type="text" name="search" placeholder="Search ideas by title or description..." value="<?php echo htmlspecialchars($search); ?>">
+                    
+                    <select name="category">
+                        <option value="0">All Categories</option>
+                        <?php foreach ($categories as $category): ?>
+                            <option value="<?php echo $category['id']; ?>" 
+                                    <?php echo $categoryFilter == $category['id'] ? 'selected' : ''; ?>>
+                                <?php echo sanitize($category['name']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    
+                    <button type="submit" class="btn btn-secondary">Filter</button>
+                    <?php if ($search || $categoryFilter): ?>
+                        <a href="ideas.php" class="btn btn-outline">Clear</a>
+                    <?php endif; ?>
                 </form>
             </div>
             
-            <!-- Ideas Grid -->
-            <div class="ideas-results">
-                <p class="results-count">
-                    <?php echo count($ideas); ?> idea<?php echo count($ideas) != 1 ? 's' : ''; ?> found
-                </p>
-                
-                <?php if ($ideas): ?>
-                    <div class="ideas-grid">
-                        <?php foreach ($ideas as $idea): ?>
-                            <div class="idea-card">
-                                <div class="idea-header">
-                                    <h3><a href="idea-detail.php?id=<?php echo $idea['id']; ?>">
-                                        <?php echo sanitize($idea['title']); ?>
-                                    </a></h3>
-                                    <span class="idea-category"><?php echo sanitize($idea['category_name']); ?></span>
-                                </div>
-                                
-                                <div class="idea-content">
-                                    <p class="idea-description">
-                                        <?php 
-                                        $description = sanitize($idea['description']);
-                                        echo strlen($description) > 150 ? substr($description, 0, 150) . '...' : $description;
-                                        ?>
-                                    </p>
-                                </div>
-                                
-                                <div class="idea-meta">
-                                    <div class="idea-stats">
-                                        <span class="vote-count">👍 <?php echo $idea['vote_count']; ?></span>
-                                        <?php
-                                        $commentCount = $db->fetchOne("SELECT COUNT(*) as count FROM comments WHERE idea_id = ?", [$idea['id']]);
-                                        ?>
-                                        <span class="comment-count">💬 <?php echo $commentCount['count']; ?></span>
-                                    </div>
-                                    
-                                    <div class="idea-author">
-                                        <span>by <?php echo sanitize($idea['author_name']); ?></span>
-                                        <span class="idea-date"><?php echo date('M j, Y', strtotime($idea['created_at'])); ?></span>
-                                    </div>
-                                </div>
-                                
-                                <?php if ($idea['file_path']): ?>
-                                    <div class="idea-attachment">
-                                        📎 Has attachment
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                <?php else: ?>
-                    <div class="no-results">
-                        <h3>No ideas found</h3>
-                        <p>Try adjusting your search criteria or <a href="submit-idea.php">submit the first idea</a>!</p>
-                    </div>
-                <?php endif; ?>
+            <!-- Ideas Table -->
+            <div class="table-container">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Title</th>
+                            <th>Author</th>
+                            <th>Category</th>
+                            <th>Votes</th>
+                            <th>Comments</th>
+                            <th>File</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if ($ideas): ?>
+                            <?php foreach ($ideas as $idea): ?>
+                                <tr>
+                                    <td><?php echo $idea['id']; ?></td>
+                                    <td>
+                                        <div class="idea-title">
+                                            <?php echo sanitize(substr($idea['title'], 0, 50)) . (strlen($idea['title']) > 50 ? '...' : ''); ?>
+                                        </div>
+                                    </td>
+                                    <td><?php echo sanitize($idea['author_name']); ?></td>
+                                    <td><?php echo sanitize($idea['category_name']); ?></td>
+                                    <td><?php echo $idea['vote_count']; ?></td>
+                                    <td><?php echo $idea['comment_count']; ?></td>
+                                    <td>
+                                        <?php if ($idea['file_path']): ?>
+                                            <a href="../uploads/<?php echo sanitize($idea['file_path']); ?>" target="_blank" class="file-link">📎</a>
+                                        <?php else: ?>
+                                            —
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?php echo date('M j, Y', strtotime($idea['created_at'])); ?></td>
+                                    <td class="actions">
+                                        <a href="../idea-detail.php?id=<?php echo $idea['id']; ?>" target="_blank" class="btn btn-sm btn-outline">View</a>
+                                        <form method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this idea? This will also delete all votes and comments.')">
+                                            <input type="hidden" name="action" value="delete">
+                                            <input type="hidden" name="idea_id" value="<?php echo $idea['id']; ?>">
+                                            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="9" class="text-center">No ideas found</td>
+                            </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
             </div>
+            
+            <!-- Pagination -->
+            <?php if ($totalPages > 1): ?>
+                <div class="pagination">
+                    <?php if ($page > 1): ?>
+                        <a href="?page=<?php echo $page - 1; ?><?php echo $search ? '&search=' . urlencode($search) : ''; ?><?php echo $categoryFilter ? '&category=' . $categoryFilter : ''; ?>" class="btn btn-outline">Previous</a>
+                    <?php endif; ?>
+                    
+                    <span class="page-info">Page <?php echo $page; ?> of <?php echo $totalPages; ?></span>
+                    
+                    <?php if ($page < $totalPages): ?>
+                        <a href="?page=<?php echo $page + 1; ?><?php echo $search ? '&search=' . urlencode($search) : ''; ?><?php echo $categoryFilter ? '&category=' . $categoryFilter : ''; ?>" class="btn btn-outline">Next</a>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
-    
-    <script>
-        // Auto-submit form when filters change
-        document.querySelectorAll('select[name="category"], select[name="sort"]').forEach(function(select) {
-            select.addEventListener('change', function() {
-                this.form.submit();
-            });
-        });
-    </script>
 </body>
 </html>
