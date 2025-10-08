@@ -1,5 +1,5 @@
 <?php
-require_once '../php/config.php';
+require_once '../config.php';
 requireAdmin();
 
 // Handle actions
@@ -56,7 +56,7 @@ $users = $db->fetchAll(
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Manage Users - IdeaBox Admin</title>
-    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../style.css">
 </head>
 <body>
     <nav class="navbar admin-nav">

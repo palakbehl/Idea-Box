@@ -1,5 +1,5 @@
 <?php
-require_once 'php/config.php';
+require_once 'config.php';
 requireLogin();
 
 $user = getCurrentUser();
@@ -10,7 +10,7 @@ $user = getCurrentUser();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile - IdeaBox</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <nav class="navbar">
@@ -44,7 +44,7 @@ $user = getCurrentUser();
             <div class="profile-content">
                 <div class="profile-info">
                     <h2>Account Information</h2>
-                    <form id="profileForm" action="php/update-profile.php" method="POST">
+                    <form id="profileForm" action="update-profile.php" method="POST">
                         <div class="form-group">
                             <label for="name">Full Name:</label>
                             <input type="text" id="name" name="name" value="<?php echo sanitize($user['name']); ?>" required>
@@ -63,7 +63,7 @@ $user = getCurrentUser();
                 
                 <div class="password-change">
                     <h2>Change Password</h2>
-                    <form id="passwordForm" action="php/change-password.php" method="POST">
+                    <form id="passwordForm" action="change-password.php" method="POST">
                         <div class="form-group">
                             <label for="current_password">Current Password:</label>
                             <input type="password" id="current_password" name="current_password" required>
@@ -95,7 +95,7 @@ $user = getCurrentUser();
         </div>
     </div>
     
-    <script src="js/validation.js"></script>
+    <script src="validation.js"></script>
     <script>
         document.getElementById('profileForm').addEventListener('submit', function(e) {
             if (!validateProfileForm()) {

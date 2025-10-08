@@ -6,9 +6,9 @@ echo "<h2>IdeaBox Database Connection Test</h2>";
 echo "<h3>1. Testing MySQL Connection</h3>";
 try {
     $pdo = new PDO("mysql:host=localhost", "root", "");
-    echo "✅ MySQL connection successful<br>";
+    echo "MySQL connection successful<br>";
 } catch (PDOException $e) {
-    echo "❌ MySQL connection failed: " . $e->getMessage() . "<br>";
+    echo "MySQL connection failed: " . $e->getMessage() . "<br>";
     exit();
 }
 
@@ -18,24 +18,24 @@ try {
     $stmt = $pdo->query("SHOW DATABASES LIKE 'ideabox'");
     $result = $stmt->fetch();
     if ($result) {
-        echo "✅ Database 'ideabox' exists<br>";
+        echo "Database 'ideabox' exists<br>";
     } else {
-        echo "❌ Database 'ideabox' does not exist<br>";
+        echo "Database 'ideabox' does not exist<br>";
         echo "<strong>Solution:</strong> Create the database using phpMyAdmin or run this SQL:<br>";
         echo "<code>CREATE DATABASE ideabox;</code><br>";
         exit();
     }
 } catch (PDOException $e) {
-    echo "❌ Error checking database: " . $e->getMessage() . "<br>";
+    echo "Error checking database: " . $e->getMessage() . "<br>";
 }
 
 // Test connection to ideabox database
 echo "<h3>3. Testing connection to 'ideabox' database</h3>";
 try {
     $pdo = new PDO("mysql:host=localhost;dbname=ideabox", "root", "");
-    echo "✅ Connected to 'ideabox' database successfully<br>";
+    echo "Connected to 'ideabox' database successfully<br>";
 } catch (PDOException $e) {
-    echo "❌ Failed to connect to 'ideabox' database: " . $e->getMessage() . "<br>";
+    echo "Failed to connect to 'ideabox' database: " . $e->getMessage() . "<br>";
     exit();
 }
 
@@ -53,13 +53,13 @@ try {
     }
     
     if (empty($missingTables)) {
-        echo "✅ All required tables exist<br>";
+        echo "All required tables exist<br>";
     } else {
-        echo "❌ Missing tables: " . implode(', ', $missingTables) . "<br>";
+        echo " Missing tables: " . implode(', ', $missingTables) . "<br>";
         echo "<strong>Solution:</strong> Import the database_setup.sql file in phpMyAdmin<br>";
     }
 } catch (PDOException $e) {
-    echo "❌ Error checking tables: " . $e->getMessage() . "<br>";
+    echo " Error checking tables: " . $e->getMessage() . "<br>";
 }
 
 // Test uploads directory
@@ -67,13 +67,13 @@ echo "<h3>5. Checking uploads directory permissions</h3>";
 $uploadsDir = __DIR__ . '/uploads/';
 if (is_dir($uploadsDir)) {
     if (is_writable($uploadsDir)) {
-        echo "✅ Uploads directory is writable<br>";
+        echo " Uploads directory is writable<br>";
     } else {
-        echo "❌ Uploads directory is not writable<br>";
+        echo " Uploads directory is not writable<br>";
         echo "<strong>Solution:</strong> Run: <code>icacls uploads /grant Everyone:F</code><br>";
     }
 } else {
-    echo "❌ Uploads directory does not exist<br>";
+    echo "Uploads directory does not exist<br>";
     echo "<strong>Solution:</strong> Create the uploads directory<br>";
 }
 

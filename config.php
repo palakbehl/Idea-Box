@@ -3,7 +3,7 @@
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'ideabox');
 define('DB_USER', 'root');
-define('DB_PASS', 'palak@mysql');
+define('DB_PASS', '');
 
 // Site configuration
 define('SITE_URL', 'http://localhost');
@@ -76,14 +76,14 @@ function isAdmin() {
 
 function requireLogin() {
     if (!isLoggedIn()) {
-        header('Location: /IdeaBox/login.php');
+        header('Location: login.php');
         exit();
     }
 }
 
 function requireAdmin() {
     if (!isAdmin()) {
-        header('Location: /IdeaBox/admin/login.php');
+        header('Location: admin/login.php');
         exit();
     }
 }

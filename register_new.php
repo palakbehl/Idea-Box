@@ -1,5 +1,5 @@
 <?php
-require_once 'php/config.php';
+require_once 'config.php';
 
 $message = '';
 
@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $_SESSION['user_name'] = $name;
                     $_SESSION['user_email'] = $email;
                     
-                    header('Location: /IdeaBox/dashboard.php');
+                    header('Location: user-dashboard.php');
                     exit();
                 } else {
                     $message = 'Registration failed';
@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html>
 <head>
     <title>Register - IdeaBox</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
