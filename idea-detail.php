@@ -1,5 +1,5 @@
 <?php
-require_once 'php/config.php';
+require_once 'config.php';
 requireLogin();
 
 $ideaId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -117,7 +117,7 @@ if (isLoggedIn()) {
                 <?php endif; ?>
                 
                 <!-- Add Comment Form -->
-                <form id="commentForm" action="php/add-comment.php" method="POST" class="comment-form">
+                <form id="commentForm" action="add-comment.php" method="POST" class="comment-form">
                     <input type="hidden" name="idea_id" value="<?php echo $idea['id']; ?>">
                     <div class="form-group">
                         <textarea name="comment" placeholder="Add your comment..." rows="3" required></textarea>

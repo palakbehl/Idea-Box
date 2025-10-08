@@ -12,7 +12,7 @@ $offset = ($page - 1) * $perPage;
 
 $search = isset($_GET['search']) ? sanitize($_GET['search']) : '';
 $categoryFilter = isset($_GET['category']) ? (int)$_GET['category'] : 0;
-$userFilter = isset($_GET['user']) ? (int)$_GET['user']) : 0;
+$userFilter = isset($_GET['user']) ? ((int)$_GET['user']) : 0;
 
 $whereConditions = [];
 $params = [];

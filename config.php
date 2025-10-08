@@ -7,7 +7,7 @@ define('DB_PASS', '');
 
 // Site configuration
 define('SITE_URL', 'http://localhost');
-define('UPLOAD_DIR', __DIR__ . '/../uploads/');
+define('UPLOAD_DIR', __DIR__ . '/uploads/');
 define('MAX_FILE_SIZE', 5 * 1024 * 1024); // 5MB
 
 // Start session if not already started

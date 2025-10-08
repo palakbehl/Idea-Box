@@ -74,7 +74,7 @@ mysql -u your_username -p ideabox < database_setup.sql
 ```
 
 ### 3. Configure Database Connection
-Edit `php/config.php` and update the database settings:
+Edit `config.php` and update the database settings:
 ```php
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'ideabox');
@@ -125,8 +125,8 @@ ideabox/
 │   ├── login.php          # Login handler
 │   ├── register.php       # Registration handler
 │   ├── submit-idea.php    # Idea submission
-│   ├── vote.php          # Voting handler
-│   ├── add-comment.php   # Comment handler
+│   ├── vote.php           # Voting handler
+│   ├── add-comment.php    # Comment handler
 │   └── ...               # Other PHP handlers
 ├── uploads/              # File upload directory
 ├── database_setup.sql    # Database schema
@@ -268,7 +268,7 @@ You can create test accounts or use these for testing:
 ### Common Issues
 
 1. **Database Connection Errors**
-   - Check database credentials in `php/config.php`
+   - Check database credentials in `config.php`
    - Ensure MySQL service is running
    - Verify database exists and is accessible
 
@@ -288,7 +288,7 @@ You can create test accounts or use these for testing:
    - Check browser console for errors
 
 ### Debug Mode
-To enable debug mode, add this to `php/config.php`:
+To enable debug mode, add this to `config.php`:
 ```php
 error_reporting(E_ALL);
 ini_set('display_errors', 1);

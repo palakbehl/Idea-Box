@@ -208,13 +208,6 @@ if ($response['success']) {
             </div>
         <?php endif; ?>
         
-        <div class="info">
-            <p><strong>Default Credentials:</strong><br>
-            Username: admin<br>
-            Password: admin123</p>
-            <p><a href="fix-admin-password.php">Fix admin password</a> if needed.</p>
-        </div>
-        
         <form method="POST">
             <div class="form-group">
                 <label for="username">Username</label>

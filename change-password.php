@@ -59,6 +59,6 @@ if ($response['success']) {
 } else {
     $_SESSION['error_message'] = $response['message'];
 }
-header('Location: /IdeaBox/profile.php');
+header('Location: profile.php');
 exit();
 ?>

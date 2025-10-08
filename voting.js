@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Disable button during request
             this.disabled = true;
             
-            fetch('php/vote.php', {
+            fetch('vote.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
@@ -56,7 +56,7 @@ function quickVote(ideaId, button) {
     button.disabled = true;
     button.innerHTML = '...';
     
-    fetch('php/vote.php', {
+    fetch('vote.php', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
