@@ -1,56 +1,101 @@
-<?php
-require_once 'php/config.php';
-
-// If user is already logged in, redirect to dashboard
-if (isLoggedIn()) {
-    header('Location: dashboard.php');
-    exit();
-}
-?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to IdeaBox</title>
-    <link rel="stylesheet" href="css/style.css">
+    <title>API Documentation - IdeaBox</title>
+    <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
-    <div class="hero-section">
-        <div class="container">
-            <div class="hero-content">
-                <h1>Welcome to IdeaBox</h1>
-                <p>Share your brilliant ideas and connect with innovative minds worldwide.</p>
-                <div class="hero-buttons">
-                    <a href="login.php" class="btn btn-primary">Login</a>
-                    <a href="register.php" class="btn btn-secondary">Register</a>
+    <div class="container">
+        <div class="api-docs">
+            <h1>IdeaBox REST API</h1>
+            <p>Simple REST API for accessing IdeaBox data.</p>
+            
+            <div class="api-section">
+                <h2>Available Endpoints</h2>
+                
+                <div class="endpoint">
+                    <h3>GET /api/top-ideas.php</h3>
+                    <p>Returns the top 5 most upvoted ideas.</p>
+                    
+                    <h4>Response Format:</h4>
+                    <pre><code>{
+  "success": true,
+  "message": "Top ideas retrieved successfully",
+  "data": [
+    {
+      "id": 1,
+      "title": "Idea Title",
+      "description": "Idea description...",
+      "category": "Technology",
+      "author": "Author Name",
+      "votes": 15,
+      "comments": 8,
+      "created_at": "2024-01-01T12:00:00+00:00",
+      "url": "http://localhost/idea-detail.php?id=1"
+    }
+  ],
+  "total": 5,
+  "timestamp": "2024-01-01T12:00:00+00:00"
+}</code></pre>
+                    
+                    <h4>Try it out:</h4>
+                    <button onclick="testAPI()" class="btn btn-primary">Test API Endpoint</button>
+                    <div id="api-result" class="api-result"></div>
                 </div>
             </div>
+            
+            <div class="api-section">
+                <h2>Usage Examples</h2>
+                
+                <h3>JavaScript (Fetch API)</h3>
+                <pre><code>fetch('/api/top-ideas.php')
+  .then(response => response.json())
+  .then(data => {
+    console.log('Top Ideas:', data.data);
+  })
+  .catch(error => {
+    console.error('Error:', error);
+  });</code></pre>
+                
+                <h3>cURL</h3>
+                <pre><code>curl -X GET "http://localhost/api/top-ideas.php"</code></pre>
+                
+                <h3>PHP</h3>
+                <pre><code>$response = file_get_contents('http://localhost/api/top-ideas.php');
+$data = json_decode($response, true);
+print_r($data['data']);</code></pre>
+            </div>
+            
+            <div class="api-section">
+                <h2>Response Codes</h2>
+                <ul>
+                    <li><strong>200 OK</strong> - Request successful</li>
+                    <li><strong>500 Internal Server Error</strong> - Database or server error</li>
+                </ul>
+            </div>
+            
+            <p class="back-link">
+                <a href="../dashboard.php">← Back to Dashboard</a>
+            </p>
         </div>
     </div>
     
-    <div class="features-section">
-        <div class="container">
-            <h2>Why Choose IdeaBox?</h2>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <h3>💡 Share Ideas</h3>
-                    <p>Submit your innovative ideas and get feedback from the community.</p>
-                </div>
-                <div class="feature-card">
-                    <h3>👍 Vote & Support</h3>
-                    <p>Upvote the best ideas and help bring them to life.</p>
-                </div>
-                <div class="feature-card">
-                    <h3>💬 Collaborate</h3>
-                    <p>Comment and discuss ideas with fellow innovators.</p>
-                </div>
-                <div class="feature-card">
-                    <h3>📊 Track Progress</h3>
-                    <p>See how your ideas perform and gain insights.</p>
-                </div>
-            </div>
-        </div>
-    </div>
+    <script>
+        function testAPI() {
+            const resultDiv = document.getElementById('api-result');
+            resultDiv.innerHTML = '<p>Loading...</p>';
+            
+            fetch('../api/top-ideas.php')
+                .then(response => response.json())
+                .then(data => {
+                    resultDiv.innerHTML = '<h4>API Response:</h4><pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                })
+                .catch(error => {
+                    resultDiv.innerHTML = '<p class="error">Error: ' + error.message + '</p>';
+                });
+        }
+    </script>
 </body>
 </html>
